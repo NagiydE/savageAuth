@@ -9,7 +9,7 @@ module.exports = function(app, passport, db) {
 
     // PROFILE SECTION =========================
     app.get('/profile', isLoggedIn, function(req, res) {
-        db.collection('messages').find().toArray((err, result) => {
+        db.collection('messages').find().sort({thumbUp: -1}).toArray((err, result) => {
           if (err) return console.log(err)
           res.render('profile.ejs', {
             user : req.user,
@@ -27,7 +27,7 @@ module.exports = function(app, passport, db) {
     });
 
 // message board routes ===============================================================
-
+//saves newly created message into the messages collection on mongo
     app.post('/messages', (req, res) => {
       db.collection('messages').save({name: req.body.name, msg: req.body.msg, thumbUp: 0, thumbDown:0}, (err, result) => {
         if (err) return console.log(err)
@@ -40,8 +40,8 @@ module.exports = function(app, passport, db) {
       db.collection('messages')
       .findOneAndUpdate({name: req.body.name, msg: req.body.msg}, {
         $set: {
-          thumbUp:req.body.thumbUp + 1
-        }
+          thumbUp:req.body.thumbUp != undefined ? req.body.thumbUp +1 : req.body.thumbDown -1
+        },
       }, {
         sort: {_id: -1},
         upsert: true
@@ -101,7 +101,7 @@ module.exports = function(app, passport, db) {
         var user            = req.user;
         user.local.email    = undefined;
         user.local.password = undefined;
-        user.save(function(err) {
+        user.save(function(err) { // saves new user document into the user collection in mongo
             res.redirect('/profile');
         });
     });
